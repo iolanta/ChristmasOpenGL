@@ -3,7 +3,8 @@
 out vec4 color;
 uniform bool use_texture;
 
-// параметры точечного источника освещения
+// параметры источника освещения
+
 uniform vec4 light_position;
 uniform vec4 light_ambient;
 uniform vec4 light_diffuse;

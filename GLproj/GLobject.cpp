@@ -206,6 +206,13 @@ GLobject* GLobject::draw_ground(GLdouble x0, GLdouble x1, GLdouble y0, GLdouble 
 	res->texture = -1;
 	res->use_texture = false;
 	res->object_transformation = glm::mat4(1.0);
+
+	res->material_ambient = {0,0,0,1};
+	res->material_diffuse = { 0,0,0,1 };
+	res->material_specular = { 0,0,0,1 };
+	res->material_emission = { 0,0,0,1 };
+	res->material_shininess = 0;
+
 	return res;
 }
 

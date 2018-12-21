@@ -40,6 +40,8 @@ float dist = eye[0];
 glm::vec4 light_position, light_ambient, light_diffuse, light_specular;
 glm::vec3 light_attenuation;
 
+int oldTimeSinceStart = 0;
+
 std::vector<std::string> pathsVert = {
 "shader_lab14_phong.vert"
 };
@@ -161,6 +163,17 @@ void keyboard(unsigned char key, int x, int y)
 	glutPostRedisplay();
 }
 
+void animate_tree() {
+	int timeSinceStart = glutGet(GLUT_ELAPSED_TIME);
+	int deltaTime = timeSinceStart - oldTimeSinceStart;
+	oldTimeSinceStart = timeSinceStart;
+
+	glm::mat4 anim = glm::translate(glm::vec3{ 55, 16, 0 });
+	anim *= glm::rotate(glm::radians((float)deltaTime / 100), glm::vec3{ 0, 0, 1 });
+	anim *= glm::translate(glm::vec3{ -55, -16, 0 });
+	scene[1]->object_transformation = anim * scene[1]->object_transformation;
+	glutPostRedisplay();
+}
 
 void load_scene() {
 	scene.push_back(new GLobject("obj/Cottage.obj", "textures/Cottage1.jpg"));             // house - 0
@@ -185,34 +198,34 @@ void load_scene() {
 	scene[2]->material_ambient = { 0.2, 0.2, 0.2, 1 };
 	scene[2]->material_diffuse = { 0.5, 0.5, 0.5, 1 };
 	scene[2]->material_specular = { 0.5, 0.5, 0.5, 1 };
-	scene[2]->object_transformation *= glm::translate(glm::vec3{ 56, 8, 3 });
+	scene[2]->object_transformation *= glm::translate(glm::vec3{ 56, 5, 3 });
 	scene[2]->object_transformation *= glm::rotate(glm::radians(180.0f), glm::vec3{ 1, 0, 0 });
 	scene[2]->object_transformation *= glm::scale(glm::vec3{ 0.5f, 0.5f, 0.5f });
 
 	scene[3]->material_ambient = { 0.2, 0.2, 0.2, 1 };
 	scene[3]->material_diffuse = { 0.5, 0.5, 0.5, 1 };
 	scene[3]->material_specular = { 0.5, 0.5, 0.5, 1 };
-	scene[3]->object_transformation *= glm::translate(glm::vec3{ 56, 8, 3 });
+	scene[3]->object_transformation *= glm::translate(glm::vec3{ 56, 5, 3 });
 	scene[3]->object_transformation *= glm::scale(glm::vec3{ 0.7f, 0.7f, 0.7f });
 
 	scene[4]->material_ambient = { 0.2, 0.2, 0.2, 1 };
 	scene[4]->material_diffuse = { 0.5, 0.5, 0.5, 1 };
 	scene[4]->material_specular = { 0.5, 0.5, 0.5, 1 };
-	scene[4]->object_transformation *= glm::translate(glm::vec3{ 62, 14, 1 });
+	scene[4]->object_transformation *= glm::translate(glm::vec3{ 62, 10, 1 });
 	scene[4]->object_transformation *= glm::rotate(glm::radians(60.0f), glm::vec3{ 0, 0, 1 });
 	scene[4]->object_transformation *= glm::scale(glm::vec3{ 0.4f, 0.4f, 0.4f });
 
 	scene[5]->material_ambient = { 0.2, 0.2, 0.2, 1 };
 	scene[5]->material_diffuse = { 0.5, 0.5, 0.5, 1 };
 	scene[5]->material_specular = { 0.5, 0.5, 0.5, 1 };
-	scene[5]->object_transformation *= glm::translate(glm::vec3{ 61, 8, 2.5 });
+	scene[5]->object_transformation *= glm::translate(glm::vec3{ 61, 5, 2.5 });
 	scene[5]->object_transformation *= glm::rotate(glm::radians(120.0f), glm::vec3{ 0, 0, 1 });
 	scene[5]->object_transformation *= glm::scale(glm::vec3{ 1.8f, 1.8f, 1.8f });
 
 	scene[6]->material_ambient = { 0.2, 0.2, 0.2, 1 };
 	scene[6]->material_diffuse = { 0.5, 0.5, 0.5, 1 };
 	scene[6]->material_specular = { 0.5, 0.5, 0.5, 1 };
-	scene[6]->object_transformation *= glm::translate(glm::vec3{ 61, 8, 4.5 });
+	scene[6]->object_transformation *= glm::translate(glm::vec3{ 61, 5, 4.5 });
 	scene[6]->object_transformation *= glm::rotate(glm::radians(30.0f), glm::vec3{ 0, 0, 1 });
 	scene[6]->object_transformation *= glm::scale(glm::vec3{ 0.7f, 0.7f, 0.7f });
 
@@ -243,6 +256,7 @@ int main(int argc, char **argv)
 	glutDisplayFunc(Update);
 	glutReshapeFunc(Reshape);
 	glutKeyboardFunc(keyboard);
+	glutIdleFunc(animate_tree);
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
 		std::cout << glewGetErrorString(err) << std::endl;
