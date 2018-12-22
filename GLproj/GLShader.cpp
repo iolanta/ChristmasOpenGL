@@ -197,6 +197,7 @@ void GLShader::printInfoLogShader(GLuint shader) {
 		}
 		glGetShaderInfoLog(shader, infologLen, &charsWritten, infoLog);
 		std::cout << "InfoLog: " << infoLog << "\n\n\n";
+		checkOpenGLerror();
 		delete[] infoLog;
 	}
 }
@@ -216,6 +217,7 @@ void GLShader::printInfoLogProgram() {
 		}
 		glGetProgramInfoLog(ShaderProgram, infologLen, &charsWritten, infoLog);
 		std::cout << "InfoLog: " << infoLog << "\n\n\n";
+		checkOpenGLerror();
 		delete[] infoLog;
 	}
 }
@@ -230,11 +232,13 @@ void GLShader::linkProgram(int vertex_id, int fragment_id) {
 	delete attached;
 
 	glAttachShader(ShaderProgram, shaders[vertex_id].shader);
+	checkOpenGLerror();
+	printInfoLogProgram();
 	glAttachShader(ShaderProgram, shaders[fragment_id].shader);
 	checkOpenGLerror();
 	printInfoLogProgram();
 	glLinkProgram(ShaderProgram);     // объединяет шейдеры между собой (in/out переменные должны сооответствовать)
-	glewGetErrorString(glGetError());
+	
 	int link_ok;
 	glGetProgramiv(ShaderProgram, GL_LINK_STATUS, &link_ok);
 	if (!link_ok)

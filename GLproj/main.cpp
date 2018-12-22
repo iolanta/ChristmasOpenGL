@@ -40,14 +40,32 @@ float dist = eye[0];
 glm::vec4 light_position, light_ambient, light_diffuse, light_specular;
 glm::vec3 light_attenuation;
 
+glm::vec4 light_target;
 int oldTimeSinceStart = 0;
+bool animate = false;
+
+// параметры источника освещения
+struct Light
+{
+public: 
+	glm::vec4 light_position;
+	glm::vec4 light_ambient;
+	glm::vec4 light_diffuse;
+	glm::vec4 light_specular;
+	glm::vec3 light_attenuation;
+	glm::vec3 spot_direction;
+	float spot_cutoff;
+	float spot_exp;
+};
+
+std::vector<Light> lights;
 
 std::vector<std::string> pathsVert = {
-"shader_lab14_phong.vert"
+"shader_phong_struct.vert"
 };
 
 std::vector<std::string> pathsFrag = {
-"shader_lab14_phong.frag"
+"shader_phong_struct.frag"
 };
 
 void LoadShaders() {
@@ -62,9 +80,9 @@ void Init(void)
 }
 
 void Set_cam() {
-	Matrix_projection = glm::perspective(80.0f, (float)w / h, 0.01f, 200.0f);
+	Matrix_projection = glm::perspective(glm::radians(60.0f), (float)w / h, 0.01f, 200.0f);
 	glm::vec3 center = { 0,0,0 };
-	glm::vec3 up = { 0,0,-1 };
+	glm::vec3 up = { 0,0,1 };
 
 	Matrix_projection *= glm::lookAt(eye, center, up);
 }
@@ -82,11 +100,27 @@ void Reshape(int x, int y)
 
 
 void set_light() {
-	light_position = {0,0,100,1};
-	light_ambient = { 0.2,0.2,0.2,1 };
-	light_diffuse = { 1,1,1,1 };
-	light_specular = { 1,1,1,1 };
-	light_attenuation = {0,0,0};
+	Light l1;
+	l1.light_position = { 65,0,40,1 };
+	l1.light_ambient = { 0.2,0.2,0.2,1 };
+	l1.light_diffuse = { 1,0,0,1 };
+	l1.light_specular = { 1,0,0,1 };
+	l1.light_attenuation = {1,0,0.0001};
+	l1.spot_direction = { 0, 0, -1 };
+	l1.spot_cutoff = std::cos(glm::radians(25.0f));
+	l1.spot_exp = 200;
+	lights.push_back(l1);
+
+	Light l2;
+	l2.light_position = { 0,0,100,1 };
+	l2.light_ambient = { 0.2,0.2,0.2,1 };
+	l2.light_diffuse = { 0.6,0.6,0.6,1 };
+	l2.light_specular = { 0.5,0.5,0.5,1 };
+	l2.light_attenuation = { 0,0,0 };
+	l2.spot_direction = { 0, 0, -1 };
+	l2.spot_cutoff = 0;
+	l2.spot_exp = 0;
+	lights.push_back(l2);
 }
 
 void Update(void) {
@@ -99,11 +133,20 @@ void Update(void) {
 	shaderwrap->setUniformmat4("transform_viewProjection", false, Matrix_projection);
 	shaderwrap->setUniformfv3("transform_viewPosition", eye);
 	shaderwrap->setUniform1s("material_texture", 0);
-	shaderwrap->setUniformfv4("light_position", light_position);
-	shaderwrap->setUniformfv4("light_ambient", light_ambient);
-	shaderwrap->setUniformfv4("light_diffuse", light_diffuse);
-	shaderwrap->setUniformfv4("light_specular", light_specular);
-	shaderwrap->setUniformfv3("light_attenuation", light_attenuation);
+
+	shaderwrap->setUniform1i("lcount", lights.size());
+
+	for (int i = 0; i < lights.size(); ++i) {
+		std::string prefix = "l[" + std::to_string(i) + "].";
+		shaderwrap->setUniformfv4(prefix+"light_position", lights[i].light_position);
+		shaderwrap->setUniformfv4(prefix+"light_ambient", lights[i].light_ambient);
+		shaderwrap->setUniformfv4(prefix + "light_diffuse", lights[i].light_diffuse);
+		shaderwrap->setUniformfv4(prefix + "light_specular", lights[i].light_specular);
+		shaderwrap->setUniformfv3(prefix + "light_attenuation", lights[i].light_attenuation);
+		shaderwrap->setUniformfv3(prefix + "spot_direction", lights[i].spot_direction);
+		shaderwrap->setUniform1f(prefix + "spot_cutoff", lights[i].spot_cutoff);
+		shaderwrap->setUniform1f(prefix + "spot_exp", lights[i].spot_exp);
+	}
 
 
 	for (int i = 0; i < scene.size(); ++i) {
@@ -163,10 +206,36 @@ void keyboard(unsigned char key, int x, int y)
 	glutPostRedisplay();
 }
 
+void rotate_light(float angle) {
+	lights[0].spot_direction = glm::mat3(glm::rotate(angle, glm::vec3{ 1, 0, 0 })) * lights[0].spot_direction;
+}
+
+void specialKey(int key, int x, int y) {
+	float angle = 0;
+	switch (key)
+	{
+	case GLUT_KEY_RIGHT:
+		angle += 0.01f;
+		break;
+	case GLUT_KEY_LEFT:
+		angle -= 0.01f;
+		break;
+	case GLUT_KEY_F1:
+		animate = !animate;
+	default:
+		break;
+	}
+
+	rotate_light(angle);
+	glutPostRedisplay();
+}
+
 void animate_tree() {
 	int timeSinceStart = glutGet(GLUT_ELAPSED_TIME);
 	int deltaTime = timeSinceStart - oldTimeSinceStart;
 	oldTimeSinceStart = timeSinceStart;
+	if (!animate)
+		return;
 
 	glm::mat4 anim = glm::translate(glm::vec3{ 55, 16, 0 });
 	anim *= glm::rotate(glm::radians((float)deltaTime / 100), glm::vec3{ 0, 0, 1 });
@@ -178,56 +247,57 @@ void animate_tree() {
 void load_scene() {
 	scene.push_back(new GLobject("obj/Cottage.obj", "textures/Cottage1.jpg"));             // house - 0
 	scene.push_back(new GLobject("obj/toon_pine.obj", "textures/toon_pine.png"));          // christmas tree - 1
-	scene.push_back(new GLobject("obj/Circle_box.obj", "", glm::vec3{ 0, 0, 1 }));         // circle gift - 2
+	scene.push_back(new GLobject("obj/Circle_box.obj", "", glm::vec3{ 0.5, 0, 0.5 }));     // circle gift - 2
 	scene.push_back(new GLobject("obj/Bow.obj", "textures/bow1.jpg"));                     // circle gift bow - 3
 	scene.push_back(new GLobject("obj/Heart_Shaped_Box.obj", "", glm::vec3{ 1, 0, 0 }));   // heart box - 4
 	scene.push_back(new GLobject("obj/cube_box.obj", "textures/box3.jpg"));                // cube box - 5
-	scene.push_back(new GLobject("obj/Bow.obj", "textures/bow1.jpg"));                     // cube box bow - 6
+	scene.push_back(new GLobject("obj/Bow.obj", "textures/bow2.jpg"));                     // cube box bow - 6
 	scene.push_back(new GLobject("obj/Gingerbread_male.obj", "textures/Gingerbread_male.jpg"));        // gingerbread male - 7
 	scene.push_back(new GLobject("obj/Gingerbread_female.obj", "textures/Gingerbread_female.jpg"));    // gingerbread female - 8
 	scene.push_back(GLobject::draw_ground(-80, 80, -60, 60, 10, 10));                              // ground - 9
+	scene.push_back(new GLobject("obj/cat.obj", "textures/cat_diff.tga"));                         // cat
 
 	scene[0]->object_transformation *= glm::rotate(glm::radians(90.0f), glm::vec3{ 1, 0, 0 });
 	scene[0]->object_transformation *= glm::rotate(glm::radians(90.0f), glm::vec3{ 0, -1, 0 });
 
-	scene[1]->material_emission = glm::vec4{ 0.7, 0.7, 0.5, 1 };
+	scene[1]->material_emission = glm::vec4{ 0.7, 0.7, 0.7, 1 };
 	scene[1]->object_transformation *= glm::translate(glm::vec3{ 55, 16, 0 });
 	scene[1]->object_transformation *= glm::rotate(glm::radians(90.0f), glm::vec3{ 1, 0, 0 });
 	scene[1]->object_transformation *= glm::scale(glm::vec3{ 0.12f, 0.12f, 0.12f });
 
 	scene[2]->material_ambient = { 0.2, 0.2, 0.2, 1 };
-	scene[2]->material_diffuse = { 0.5, 0.5, 0.5, 1 };
-	scene[2]->material_specular = { 0.5, 0.5, 0.5, 1 };
-	scene[2]->object_transformation *= glm::translate(glm::vec3{ 56, 5, 3 });
+	scene[2]->material_diffuse = { 0.6, 0.6, 0.6, 1 };
+	scene[2]->material_specular = { 0.6, 0.6, 0.6, 1 };
+	scene[2]->object_transformation *= glm::translate(glm::vec3{ 54, 5, 3 });
 	scene[2]->object_transformation *= glm::rotate(glm::radians(180.0f), glm::vec3{ 1, 0, 0 });
-	scene[2]->object_transformation *= glm::scale(glm::vec3{ 0.5f, 0.5f, 0.5f });
+	scene[2]->object_transformation *= glm::scale(glm::vec3{ 0.7f, 0.7f, 0.7f });
 
 	scene[3]->material_ambient = { 0.2, 0.2, 0.2, 1 };
-	scene[3]->material_diffuse = { 0.5, 0.5, 0.5, 1 };
-	scene[3]->material_specular = { 0.5, 0.5, 0.5, 1 };
-	scene[3]->object_transformation *= glm::translate(glm::vec3{ 56, 5, 3 });
-	scene[3]->object_transformation *= glm::scale(glm::vec3{ 0.7f, 0.7f, 0.7f });
+	scene[3]->material_diffuse = { 0.6, 0.6, 0.6, 1 };
+	scene[3]->material_specular = { 0.6, 0.6, 0.6, 1 };
+	scene[3]->object_transformation *= glm::translate(glm::vec3{ 54, 5, 3 });
+	//scene[3]->object_transformation *= glm::scale(glm::vec3{ 1f, 0.8f, 0.8f });
 
 	scene[4]->material_ambient = { 0.2, 0.2, 0.2, 1 };
 	scene[4]->material_diffuse = { 0.5, 0.5, 0.5, 1 };
 	scene[4]->material_specular = { 0.5, 0.5, 0.5, 1 };
 	scene[4]->object_transformation *= glm::translate(glm::vec3{ 62, 10, 1 });
 	scene[4]->object_transformation *= glm::rotate(glm::radians(60.0f), glm::vec3{ 0, 0, 1 });
-	scene[4]->object_transformation *= glm::scale(glm::vec3{ 0.4f, 0.4f, 0.4f });
+	scene[4]->object_transformation *= glm::scale(glm::vec3{ 0.6f, 0.6f, 0.6f });
 
 	scene[5]->material_ambient = { 0.2, 0.2, 0.2, 1 };
-	scene[5]->material_diffuse = { 0.5, 0.5, 0.5, 1 };
-	scene[5]->material_specular = { 0.5, 0.5, 0.5, 1 };
-	scene[5]->object_transformation *= glm::translate(glm::vec3{ 61, 5, 2.5 });
+	scene[5]->material_diffuse = { 0.6, 0.6, 0.6, 1 };
+	scene[5]->material_specular = { 0.6, 0.6, 0.6, 1 };
+	scene[5]->object_transformation *= glm::translate(glm::vec3{ 61,4, 2.5 });
 	scene[5]->object_transformation *= glm::rotate(glm::radians(120.0f), glm::vec3{ 0, 0, 1 });
-	scene[5]->object_transformation *= glm::scale(glm::vec3{ 1.8f, 1.8f, 1.8f });
+	scene[5]->object_transformation *= glm::scale(glm::vec3{ 2.0f, 2.0f, 2.0f });
 
 	scene[6]->material_ambient = { 0.2, 0.2, 0.2, 1 };
-	scene[6]->material_diffuse = { 0.5, 0.5, 0.5, 1 };
-	scene[6]->material_specular = { 0.5, 0.5, 0.5, 1 };
-	scene[6]->object_transformation *= glm::translate(glm::vec3{ 61, 5, 4.5 });
+	scene[6]->material_diffuse = { 0.6, 0.6, 0.6, 1 };
+	scene[6]->material_specular = { 0.6, 0.6, 0.6, 1 };
+	scene[6]->object_transformation *= glm::translate(glm::vec3{ 61, 4, 4.5 });
 	scene[6]->object_transformation *= glm::rotate(glm::radians(30.0f), glm::vec3{ 0, 0, 1 });
-	scene[6]->object_transformation *= glm::scale(glm::vec3{ 0.7f, 0.7f, 0.7f });
+	scene[6]->object_transformation *= glm::scale(glm::vec3{ 0.8f, 0.8f, 0.8f });
 
 	scene[8]->object_transformation *= glm::translate(glm::vec3{ 68, 20, 2 });
 	scene[8]->object_transformation *= glm::rotate(glm::radians(90.0f), glm::vec3{ 0, 0, 1 });
@@ -236,9 +306,14 @@ void load_scene() {
 	scene[7]->object_transformation *= glm::rotate(glm::radians(90.0f), glm::vec3{ 0, 0, 1 });
 	
 	scene[9]->material_ambient = { 0.2, 0.2, 0.2, 1 };
-	scene[9]->material_diffuse = { 0.5, 0.5, 0.5, 1 };
-	scene[9]->material_specular = { 0.5, 0.5, 0.5, 1 };
+	scene[9]->material_diffuse = { 0.7, 0.7, 0.7, 1 };
+	scene[9]->material_specular = { 0.7, 0.7, 0.7, 1 };
 	scene[9]->object_transformation *= glm::translate(glm::vec3{ 10, 0, -3 });
+
+	scene[10]->object_transformation *= glm::translate(glm::vec3{ 60, -6, 0.5 });
+	scene[10]->object_transformation *= glm::rotate(glm::radians(90.0f), glm::vec3{ 1, 0, 0 });
+	scene[10]->object_transformation *= glm::rotate(glm::radians(180.0f), glm::vec3{ 0, 1, 0 });
+	scene[10]->object_transformation *= glm::scale(glm::vec3{ 7, 7, 7 });
 }
 
 
@@ -256,6 +331,7 @@ int main(int argc, char **argv)
 	glutDisplayFunc(Update);
 	glutReshapeFunc(Reshape);
 	glutKeyboardFunc(keyboard);
+	glutSpecialFunc(specialKey);
 	glutIdleFunc(animate_tree);
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
