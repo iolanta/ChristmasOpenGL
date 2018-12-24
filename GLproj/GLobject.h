@@ -24,7 +24,6 @@ public:
 	GLfloat material_shininess;
 	bool use_texture;
 
-
 	int count_vertex;
 	int count_indexes;
 	GLobject(std::string path, std::string pathtex, glm::vec3 clr = { 1,1,1 }, glm::vec3 norm = { 0,0,0 });

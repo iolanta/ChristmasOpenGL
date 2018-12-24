@@ -13,7 +13,7 @@ struct Light
 	vec4 light_specular;
 	vec3 light_attenuation;
 	vec3 spot_direction;
-	float spot_cutoff;
+	float spot_cutoff;      // -1 нет , 1..0 - 0..90грд
 	float spot_exp;
 };
 
@@ -46,27 +46,33 @@ void main(){
 		vec3 lightDir = normalize(vert_lightDir[i]);
 		vec3 spotDir = normalize(-l[i].spot_direction);
 	
-		float spotEffect = dot(spotDir, lightDir);
-		float spot = float(spotEffect > l[i].spot_cutoff);
+		float spotEffect = dot(spotDir, lightDir);  // расчёт угла отклонения от направления прожектора до текущей точки
+		float spot;
+		
+		if(l[i].spot_cutoff == -1)
+			spot = 1;
+		else
+			spot= float(spotEffect > l[i].spot_cutoff); // 0  и  1 - точка под прожектором
 		
 		if(l[i].spot_exp != 0)
-			spotEffect = max(pow(spotEffect, l[i].spot_exp), 0.0);
+			spotEffect = max(pow(spotEffect, l[i].spot_exp), 0.0);   // затухание к краям зоны влияния
+		else
+			spotEffect = 1.0;
 	
 		float attenuation = 1;
 		if(length(l[i].light_attenuation) != 0)
 			attenuation = 1.0 / (l[i].light_attenuation.x + l[i].light_attenuation.y * vert_distance[i] + l[i].light_attenuation.z * vert_distance[i] * vert_distance[i]);
 	
 		color += (material_ambient * l[i].light_ambient) * attenuation;
-		if(l[i].spot_cutoff != 0)
+		if(l[i].spot_cutoff != -1)
 			attenuation *= spot * spotEffect;
 	
-		if(dot(spotDir, lightDir) > l[i].spot_cutoff){
-			float Ndot = max(dot(normal, lightDir), 0.0);
-			color += material_diffuse * l[i].light_diffuse * Ndot * attenuation;
-			// добавление отражённого света
-			float RdotVpow = max(pow(dot(reflect(-lightDir, normal), viewDir), material_shininess), 0.0);
-			color += material_specular * l[i].light_specular * RdotVpow * attenuation;
-		}
+		// добавление рассеянного света
+		float Ndot = max(dot(normal, lightDir), 0.0);
+		color += material_diffuse * l[i].light_diffuse * Ndot * attenuation;
+		// добавление отражённого света
+		float RdotVpow = pow(max(dot(normal, viewDir), 0.0), material_shininess);
+		color += material_specular * l[i].light_specular * RdotVpow * attenuation;
 	}
 	
 	if(use_texture)

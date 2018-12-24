@@ -35,8 +35,9 @@ GLobject::GLobject(std::string path, std::string pathtex, glm::vec3 clr, glm::ve
 	glBindVertexArray(VAO);
 
 	
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);	glBufferData(GL_ARRAY_BUFFER, len*modelloader.LoadedVertices.size(), NULL, GL_STATIC_DRAW);
-	GLfloat * mapped_data = (GLfloat *)glMapBufferRange(GL_ARRAY_BUFFER, 0, len*modelloader.LoadedVertices.size(), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);  // Использует ранее созданный буфер как активный VBO
+	glBufferData(GL_ARRAY_BUFFER, len*count_vertex, NULL, GL_STATIC_DRAW);   // Выделяет память в активном VBO
+	GLfloat * mapped_data = (GLfloat *)glMapBufferRange(GL_ARRAY_BUFFER, 0, len*count_vertex, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 	int ind = 0;
 	for (size_t i = 0; i < count_vertex; ++i)
 	{
@@ -73,7 +74,7 @@ GLobject::GLobject(std::string path, std::string pathtex, glm::vec3 clr, glm::ve
 	}
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, count_indexes * sizeof(GLushort), indeces, GL_STATIC_DRAW);
 	delete indeces;
-	glBindVertexArray(0);
+
 
 	auto mat =  modelloader.LoadedMeshes[0].MeshMaterial;
 	material_ambient = {mat.Ka.X,mat.Ka.Y, mat.Ka.Z,1};
@@ -82,8 +83,11 @@ GLobject::GLobject(std::string path, std::string pathtex, glm::vec3 clr, glm::ve
 	material_emission = { 0,0,0,1 };
 	material_shininess = mat.Ns;
 
+	glBindVertexArray(0);
 
 }
+
+
 GLobject* GLobject::draw_ground(GLdouble x0, GLdouble x1, GLdouble y0, GLdouble y1, int divx, int divy) {
 	GLobject * res = new GLobject();
 	GLdouble stepx = (x1 - x0) / divx;
@@ -93,8 +97,8 @@ GLobject* GLobject::draw_ground(GLdouble x0, GLdouble x1, GLdouble y0, GLdouble 
 	y = y0;
 	x = x0;
 
-	res->count_indexes = divx*divy*6;
-	res->count_vertex = divx * divy *6;
+	res->count_indexes = divx * divy* 6;
+	res->count_vertex = divx * divy * 4;
 	
 	std::vector<GLushort> indexs;
 	indexs.reserve(res->count_indexes);
@@ -114,7 +118,8 @@ GLobject* GLobject::draw_ground(GLdouble x0, GLdouble x1, GLdouble y0, GLdouble 
 	glBindVertexArray(res->VAO);
 
 
-	glBindBuffer(GL_ARRAY_BUFFER, res->VBO);	glBufferData(GL_ARRAY_BUFFER, len*res->count_vertex, NULL, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, res->VBO);
+	glBufferData(GL_ARRAY_BUFFER, len*res->count_vertex, NULL, GL_STATIC_DRAW);
 	GLfloat * mapped_data = (GLfloat *)glMapBufferRange(GL_ARRAY_BUFFER, 0, len*res->count_vertex, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 	int ind = 0;
 	GLushort vertex = 0;
@@ -216,6 +221,7 @@ GLobject* GLobject::draw_ground(GLdouble x0, GLdouble x1, GLdouble y0, GLdouble 
 	return res;
 }
 
+// устанавливаем связи между вершинными атрибутами и буфером OpenGL
 bool GLobject::BindAttributesToShader(GLShader & shaderobject)
 {
 	glBindVertexArray(VAO);
@@ -231,8 +237,8 @@ bool GLobject::BindAttributesToShader(GLShader & shaderobject)
 		//return false;
 	}
 	if (CoordAttrib != -1) {
-		glEnableVertexAttribArray(CoordAttrib);
-		glVertexAttribPointer(CoordAttrib, 4, GL_FLOAT, GL_FALSE, stride, BUFFER_OFFSET(0));
+		glEnableVertexAttribArray(CoordAttrib); // шейдерная переменная coord будет частью буффера OpenGL 
+		glVertexAttribPointer(CoordAttrib, 4, GL_FLOAT, GL_FALSE, stride, BUFFER_OFFSET(0)); // указывает как и что будет храниться в буффере
 	}
 	if (NormAttrib != -1) {
 		glEnableVertexAttribArray(NormAttrib);
@@ -257,7 +263,7 @@ void GLobject::drawObject()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-	glDrawElements(GL_TRIANGLES, count_indexes, GL_UNSIGNED_SHORT,NULL);
+	glDrawElements(GL_TRIANGLES, count_indexes, GL_UNSIGNED_SHORT,NULL); // Передаем данные на видеокарту
 	
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);

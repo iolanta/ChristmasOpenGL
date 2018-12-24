@@ -28,19 +28,14 @@ glm::mat4 Matrix_projection;
 
 float rotateX = 0;
 float rotateY = 0;
-float scaleX = 1;
-float scaleY = 1;
 
 int VertShaderPhong, FragShaderPhong;
-GLuint tex1, tex2, tex;
-int mode = 0;
 
 glm::vec3 eye {100,0,0};
 float dist = eye[0];
 glm::vec4 light_position, light_ambient, light_diffuse, light_specular;
 glm::vec3 light_attenuation;
 
-glm::vec4 light_target;
 int oldTimeSinceStart = 0;
 bool animate = false;
 
@@ -84,7 +79,7 @@ void Set_cam() {
 	glm::vec3 center = { 0,0,0 };
 	glm::vec3 up = { 0,0,1 };
 
-	Matrix_projection *= glm::lookAt(eye, center, up);
+	Matrix_projection *= glm::lookAt(eye, center, up);   //создает матрицу вида, которая смотрит на заданную цель
 }
 
 void Reshape(int x, int y)
@@ -101,24 +96,23 @@ void Reshape(int x, int y)
 
 void set_light() {
 	Light l1;
-	l1.light_position = { 65,0,40,1 };
+	l1.light_position = { 65,0,38,1 };
 	l1.light_ambient = { 0.2,0.2,0.2,1 };
-	l1.light_diffuse = { 1,0,0,1 };
-	l1.light_specular = { 1,0,0,1 };
+	l1.light_diffuse = { 0.8,0,0,1 };
+	l1.light_specular = { 0.8,0,0,1 };
 	l1.light_attenuation = {1,0,0.0001};
 	l1.spot_direction = { 0, 0, -1 };
-	l1.spot_cutoff = std::cos(glm::radians(25.0f));
-	l1.spot_exp = 200;
+	l1.spot_cutoff = std::cos(glm::radians(40.0f));
+	l1.spot_exp = 250;
 	lights.push_back(l1);
 
 	Light l2;
 	l2.light_position = { 0,0,100,1 };
 	l2.light_ambient = { 0.2,0.2,0.2,1 };
-	l2.light_diffuse = { 0.6,0.6,0.6,1 };
-	l2.light_specular = { 0.5,0.5,0.5,1 };
+	l2.light_diffuse = { 0.4,0.4,0.4,1 };
+	l2.light_specular = { 0.3,0.3,0.3,1 };
 	l2.light_attenuation = { 0,0,0 };
-	l2.spot_direction = { 0, 0, -1 };
-	l2.spot_cutoff = 0;
+	l2.spot_cutoff = -1;
 	l2.spot_exp = 0;
 	lights.push_back(l2);
 }
@@ -127,8 +121,7 @@ void Update(void) {
 	glMatrixMode(GL_MODELVIEW);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-	glUseProgram(shaderwrap->ShaderProgram);
-
+	glUseProgram(shaderwrap->ShaderProgram);  //Используем шейдерную программу
 	
 	shaderwrap->setUniformmat4("transform_viewProjection", false, Matrix_projection);
 	shaderwrap->setUniformfv3("transform_viewPosition", eye);
@@ -167,7 +160,6 @@ void Update(void) {
 
 	glFlush();
 	glutSwapBuffers();
-
 }
 
 void keyboard(unsigned char key, int x, int y)	
@@ -245,17 +237,17 @@ void animate_tree() {
 }
 
 void load_scene() {
-	scene.push_back(new GLobject("obj/Cottage.obj", "textures/Cottage1.jpg"));             // house - 0
-	scene.push_back(new GLobject("obj/toon_pine.obj", "textures/toon_pine.png"));          // christmas tree - 1
-	scene.push_back(new GLobject("obj/Circle_box.obj", "", glm::vec3{ 0.5, 0, 0.5 }));     // circle gift - 2
-	scene.push_back(new GLobject("obj/Bow.obj", "textures/bow1.jpg"));                     // circle gift bow - 3
-	scene.push_back(new GLobject("obj/Heart_Shaped_Box.obj", "", glm::vec3{ 1, 0, 0 }));   // heart box - 4
-	scene.push_back(new GLobject("obj/cube_box.obj", "textures/box3.jpg"));                // cube box - 5
-	scene.push_back(new GLobject("obj/Bow.obj", "textures/bow2.jpg"));                     // cube box bow - 6
-	scene.push_back(new GLobject("obj/Gingerbread_male.obj", "textures/Gingerbread_male.jpg"));        // gingerbread male - 7
-	scene.push_back(new GLobject("obj/Gingerbread_female.obj", "textures/Gingerbread_female.jpg"));    // gingerbread female - 8
-	scene.push_back(GLobject::draw_ground(-80, 80, -60, 60, 10, 10));                              // ground - 9
-	scene.push_back(new GLobject("obj/cat.obj", "textures/cat_diff.tga"));                         // cat
+	scene.push_back(new GLobject("obj/Cottage.obj", "textures/Cottage1.jpg"));									// house - 0
+	scene.push_back(new GLobject("obj/toon_pine.obj", "textures/toon_pine.png"));								// christmas tree - 1
+	scene.push_back(new GLobject("obj/Circle_box.obj", "", glm::vec3{ 0.5, 0, 0.5 }, glm::vec3{0, 0, -1}));     // circle gift - 2
+	scene.push_back(new GLobject("obj/Bow.obj", "textures/bow1.jpg"));											 // circle gift bow - 3
+	scene.push_back(new GLobject("obj/Heart_Shaped_Box.obj", "", glm::vec3{ 1, 0, 0 }));						// heart box - 4
+	scene.push_back(new GLobject("obj/cube_box.obj", "textures/box3.jpg"));										// cube box - 5
+	scene.push_back(new GLobject("obj/Bow.obj", "textures/bow2.jpg"));											// cube box bow - 6
+	scene.push_back(new GLobject("obj/Gingerbread_male.obj", "textures/Gingerbread_male.jpg"));					 // gingerbread male - 7
+	scene.push_back(new GLobject("obj/Gingerbread_female.obj", "textures/Gingerbread_female.jpg"));				 // gingerbread female - 8
+	scene.push_back(GLobject::draw_ground(-80, 80, -60, 60, 10, 10));											// ground - 9
+	scene.push_back(new GLobject("obj/cat.obj", "textures/cat_diff.tga"));										// cat
 
 	scene[0]->object_transformation *= glm::rotate(glm::radians(90.0f), glm::vec3{ 1, 0, 0 });
 	scene[0]->object_transformation *= glm::rotate(glm::radians(90.0f), glm::vec3{ 0, -1, 0 });
@@ -276,7 +268,6 @@ void load_scene() {
 	scene[3]->material_diffuse = { 0.6, 0.6, 0.6, 1 };
 	scene[3]->material_specular = { 0.6, 0.6, 0.6, 1 };
 	scene[3]->object_transformation *= glm::translate(glm::vec3{ 54, 5, 3 });
-	//scene[3]->object_transformation *= glm::scale(glm::vec3{ 1f, 0.8f, 0.8f });
 
 	scene[4]->material_ambient = { 0.2, 0.2, 0.2, 1 };
 	scene[4]->material_diffuse = { 0.5, 0.5, 0.5, 1 };
@@ -306,8 +297,8 @@ void load_scene() {
 	scene[7]->object_transformation *= glm::rotate(glm::radians(90.0f), glm::vec3{ 0, 0, 1 });
 	
 	scene[9]->material_ambient = { 0.2, 0.2, 0.2, 1 };
-	scene[9]->material_diffuse = { 0.7, 0.7, 0.7, 1 };
-	scene[9]->material_specular = { 0.7, 0.7, 0.7, 1 };
+	scene[9]->material_diffuse = { 1, 1, 1, 1 };
+	scene[9]->material_specular = { 0.2, 0.2, 0.2, 1 };
 	scene[9]->object_transformation *= glm::translate(glm::vec3{ 10, 0, -3 });
 
 	scene[10]->object_transformation *= glm::translate(glm::vec3{ 60, -6, 0.5 });
@@ -325,7 +316,7 @@ int main(int argc, char **argv)
 	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(800, 600);
 
-	glutCreateWindow("OpenGL");
+	glutCreateWindow("Merry Christmas!");
 	glEnable(GL_DEPTH_TEST);
 	
 	glutDisplayFunc(Update);
@@ -340,17 +331,17 @@ int main(int argc, char **argv)
 	Init();
 
 	shaderwrap = new GLShader();
-	
 	LoadShaders();
 
 	load_scene();
 
 	shaderwrap->linkProgram(VertShaderPhong, FragShaderPhong);
+
 	for (int i = 0; i < scene.size(); ++i)
 		scene[i]->BindAttributesToShader(*shaderwrap);
+
 	shaderwrap->checkOpenGLerror();
 	set_light();
 	glutMainLoop();
-
 	return 0;         
 }

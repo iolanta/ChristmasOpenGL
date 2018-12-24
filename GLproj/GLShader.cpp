@@ -6,8 +6,8 @@
 ShaderData::ShaderData(){}
 
 ShaderData::ShaderData(GLuint sh, GLenum type) {
-	ShaderData::shader = sh;
-	ShaderData::shader_type = type;
+	ShaderData::shader = sh;         // идентификатор шейдера
+	ShaderData::shader_type = type;  // тип шейдера
 }
 
 VariableData::VariableData() {}
@@ -176,7 +176,7 @@ GLuint GLShader::compileSource(std::string filename, GLenum shader_type) {
 	std::string str = loadSourceFile(filename);
 	const char * c = str.c_str();
 	int len = str.length();
-	glShaderSource(shader,1,&c,&len);
+	glShaderSource(shader,1,&c,&len);    // загружается исходный код на идентификатор шейдера
 	glCompileShader(shader);
 	printInfoLogShader(shader);
 	return shader;
@@ -231,7 +231,7 @@ void GLShader::linkProgram(int vertex_id, int fragment_id) {
 		glDetachShader(ShaderProgram, attached[i]);
 	delete attached;
 
-	glAttachShader(ShaderProgram, shaders[vertex_id].shader);
+	glAttachShader(ShaderProgram, shaders[vertex_id].shader);   // шейдер прикрепляется к программе 
 	checkOpenGLerror();
 	printInfoLogProgram();
 	glAttachShader(ShaderProgram, shaders[fragment_id].shader);
@@ -258,7 +258,7 @@ void GLShader::linkProgram(int vertex_id, int fragment_id) {
 	for (int i= 0; i < count_attributes; ++i) {
 		int size;
 		GLenum type;
-		glGetActiveAttrib(ShaderProgram, i, max_length, NULL, &size, &type, name);
+		glGetActiveAttrib(ShaderProgram, i, max_length, NULL, &size, &type, name);    // возвращает информацию об активном атрибуте в шейдерной программе
 		auto Loc = glGetAttribLocation(ShaderProgram, name);
 		std::string sname = std::string(name);
 		VariableData vb(Loc,sname, type, size);

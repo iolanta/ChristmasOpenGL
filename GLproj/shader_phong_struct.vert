@@ -38,7 +38,7 @@ out vec3 vert_color;
 
 
 void main(){
-	vec4 vertex = transform_model * coord;
+	vec4 vertex = transform_model * coord;     // перевод координат вершины в мировую систему координат
 	gl_Position = transform_viewProjection * vertex;
 	
 	vert_texcoord = texcoord;
