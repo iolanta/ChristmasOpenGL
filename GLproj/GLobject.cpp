@@ -231,11 +231,7 @@ bool GLobject::BindAttributesToShader(GLShader & shaderobject)
 	GLint TexCoordAttrib = shaderobject.getAttributeLocation("texcoord");
 	GLint ColorAttrib = shaderobject.getAttributeLocation("color");
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	if (CoordAttrib == -1 || NormAttrib == -1 || TexCoordAttrib == -1 || ColorAttrib == -1)
-	{
-		//glBindVertexArray(0);
-		//return false;
-	}
+
 	if (CoordAttrib != -1) {
 		glEnableVertexAttribArray(CoordAttrib); // шейдерная переменная coord будет частью буффера OpenGL 
 		glVertexAttribPointer(CoordAttrib, 4, GL_FLOAT, GL_FALSE, stride, BUFFER_OFFSET(0)); // указывает как и что будет храниться в буффере

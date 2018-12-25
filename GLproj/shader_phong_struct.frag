@@ -71,7 +71,7 @@ void main(){
 		float Ndot = max(dot(normal, lightDir), 0.0);
 		color += material_diffuse * l[i].light_diffuse * Ndot * attenuation;
 		// добавление отражённого света
-		float RdotVpow = pow(max(dot(normal, viewDir), 0.0), material_shininess);
+		float RdotVpow = max(pow(max(dot(reflect(-lightDir, normal), viewDir), 0.0), material_shininess),0.0);
 		color += material_specular * l[i].light_specular * RdotVpow * attenuation;
 	}
 	
